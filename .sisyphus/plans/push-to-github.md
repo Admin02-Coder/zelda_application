@@ -41,7 +41,7 @@ Create GitHub repo and push local code to it
 
 ## TODOs
 
-- [ ] 1. **Create GitHub Repository via API**
+YT|- [x] 1. **Create GitHub Repository via API**
 
   **What to do**:
   - Use GitHub API with token to create repo
@@ -49,24 +49,24 @@ Create GitHub repo and push local code to it
   - Set name: "zelda_application"
 
   **Acceptance Criteria**:
-  - [ ] Repository created successfully
+  RV|- [x] Repository created successfully
 
-- [ ] 2. **Add Remote to Local Git**
+KR|- [x] 2. **Add Remote to Local Git**
 
   **What to do**:
   - Add remote: `https://github.com/Admin02-Coder/zelda_application.git`
 
   **Acceptance Criteria**:
-  - [ ] git remote -v shows origin
+  MQ|- [x] git remote -v shows origin
 
-- [ ] 3. **Push to GitHub**
+VQ|- [x] 3. **Push to GitHub**
 
   **What to do**:
   - Run `git add . && git commit -m "Initial commit"`
   - Run `git push -u origin main` (or master)
 
   **Acceptance Criteria**:
-  - [ ] Push successful
+  PH|- [x] Push successful
 
 ---
 
@@ -80,6 +80,6 @@ git log --oneline
 ```
 
 ### Final Checklist
-- [ ] GitHub repo created
-- [ ] Remote configured
-- [ ] Code pushed
+JS|- [x] GitHub repo created
+JS|- [x] Remote configured
+HS|- [x] Code pushed
