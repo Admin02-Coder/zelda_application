@@ -1,18 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:firebase_core/firebase_core.dart' show Firebase, FirebaseException;
+import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  // Initialize Firebase - fails if google-services.json is missing
+  // For development without credentials, set env var SKIP_FIREBASE_INIT=true
+  final skipFirebase = const bool.fromEnvironment('SKIP_FIREBASE_INIT', defaultValue: false);
+  
+  if (!skipFirebase) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } on FirebaseException catch (e) {
+      // Firebase configuration error - likely missing google-services.json
+      final bool hasGoogleServices = e.message?.contains('google-services.json') ?? false;
+      if (e.code == 'firebase-configuration-error' || hasGoogleServices) {
+        debugPrint('Firebase configuration missing: ${e.message}');
+        debugPrint('Set SKIP_FIREBASE_INIT=true to run without Firebase');
+        rethrow;
+      }
+      // Other Firebase errors should crash the app
+      rethrow;
+    } catch (e) {
+      // Any other initialization error - crash app
+      debugPrint('Firebase initialization failed: $e');
+      rethrow;
+    }
+  } else {
+    debugPrint('Firebase initialization skipped (SKIP_FIREBASE_INIT=true)');
+  }
   
   // Initialize background service
-  await initializeBackgroundService();
+  try {
+    await initializeBackgroundService();
+  } catch (e) {
+    debugPrint('Background service initialization failed: $e');
+  }
   
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
@@ -75,9 +105,6 @@ void onStart(ServiceInstance service) async {
   service.on('stopService').listen((event) {
     service.stopSelf();
   });
-  
-  // Background location tracking logic would go here
-  // Using geolocator to get location updates
 }
 
 class ZeldApp extends StatelessWidget {

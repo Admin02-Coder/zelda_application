@@ -14,6 +14,7 @@ import '../../features/police/screens/police_register_screen.dart';
 import '../../features/police/screens/emergency_details_screen.dart';
 import '../../features/police/screens/police_dashboard_screen.dart';
 import '../../features/police/screens/live_map_screen.dart';
+import '../../features/police/screens/police_login_screen.dart';
 
 /// ZELDA App Router Configuration using GoRouter
 class AppRouter {
@@ -86,7 +87,7 @@ class AppRouter {
       GoRoute(
         path: '/police',
         name: 'police',
-        builder: (context, state) => const Placeholder(),
+        builder: (context, state) => const PoliceLoginScreen(),
         routes: [
           GoRoute(
             path: 'register',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/glass_card.dart';
 
@@ -137,30 +138,32 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 // Login Button
-                GlassCard(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.cyan, Color(0xFF00A3CC)],
-                  ),
-                  child: MaterialButton(
-                    onPressed: _isLoading ? null : _handleLogin,
-                    width: double.infinity,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                SizedBox(
+                  width: double.infinity,
+                  child: GlassCard(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.cyan, Color(0xFF00A3CC)],
+                    ),
+                    child: MaterialButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Access Control Room',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          )
-                        : const Text(
-                            'Access Control Room',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -174,7 +177,7 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/police-register');
+                        GoRouter.of(context).go('/police/register');
                       },
                       child: const Text(
                         'Register here',
@@ -190,7 +193,7 @@ class _PoliceLoginScreenState extends State<PoliceLoginScreen> {
                 // Back to User Login
                 TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/login');
+                    GoRouter.of(context).go('/login');
                   },
                   child: Text(
                     'Back to User Login',
