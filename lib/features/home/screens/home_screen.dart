@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import 'main_dashboard_screen.dart';
+import '../../emergency/screens/emergency_history_screen.dart';
+import '../../settings/screens/settings_screen.dart';
 
 /// Home Screen with Bottom Navigation
 class HomeScreen extends StatefulWidget {
@@ -16,8 +18,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _screens = [
     const MainDashboardScreen(),
-    const Placeholder(), // Emergency History
-    const Placeholder(), // Profile/Settings
+    const EmergencyHistoryScreen(), // Emergency History
+    const SettingsScreen(), // Settings
   ];
 
   @override

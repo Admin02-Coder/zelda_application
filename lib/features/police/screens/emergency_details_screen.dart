@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/emergency_service.dart';
 import '../../../shared/widgets/glass_card.dart';
 
 class EmergencyDetailsScreen extends StatefulWidget {
@@ -13,8 +14,10 @@ class EmergencyDetailsScreen extends StatefulWidget {
 
 class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
   final MapController _mapController = MapController();
+  final EmergencyService _emergencyService = EmergencyService();
   bool _isAcknowledging = false;
   bool _isResolving = false;
+  final String _policeId = 'police_user';
 
   late Map<String, dynamic> _emergency;
 
@@ -23,47 +26,83 @@ class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
     super.didChangeDependencies();
     _emergency = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {
       'id': '0',
-      'name': 'Unknown',
-      'lat': 37.7749,
-      'lng': -122.4194,
-      'time': 'Unknown',
-      'type': 'manual',
+      'userName': 'Unknown',
+      'latitude': 37.7749,
+      'longitude': -122.4194,
+      'createdAt': DateTime.now(),
+      'triggerType': 'manual',
+      'status': 'active',
     };
   }
 
   Future<void> _acknowledgeEmergency() async {
     setState(() => _isAcknowledging = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Emergency acknowledged'),
-          backgroundColor: AppColors.green,
-        ),
-      );
-      Navigator.pop(context);
+    try {
+      await _emergencyService.acknowledgeEmergency(_emergency['id'], _policeId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Emergency acknowledged'),
+            backgroundColor: AppColors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppColors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isAcknowledging = false);
     }
   }
 
   Future<void> _resolveEmergency() async {
     setState(() => _isResolving = true);
-    final notes = await showDialog<String>(
-      context: context,
-      builder: (context) => _ResolveDialog(),
-    );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Emergency resolved'),
-          backgroundColor: AppColors.green,
-        ),
+    try {
+      final notes = await showDialog<String>(
+        context: context,
+        builder: (context) => const ResolveDialog(),
       );
-      Navigator.pop(context);
+      if (notes != null && mounted) {
+        await _emergencyService.resolveEmergency(
+          _emergency['id'],
+          notes: notes.isNotEmpty ? notes : null,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Emergency resolved'),
+            backgroundColor: AppColors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppColors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isResolving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final createdAt = _emergency['createdAt'] is DateTime
+        ? _emergency['createdAt'] as DateTime
+        : DateTime.now();
+    final timeAgo = _formatTime(createdAt);
+
     return Scaffold(
       backgroundColor: AppColors.navy,
       appBar: AppBar(
@@ -117,7 +156,7 @@ class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _emergency['name'] ?? 'Unknown',
+                              _emergency['userName'] ?? 'Unknown',
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -144,7 +183,7 @@ class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  _emergency['time'] ?? 'Unknown',
+                                  timeAgo,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: 12,
@@ -174,8 +213,8 @@ class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
                   mapController: _mapController,
                   options: MapOptions(
                     initialCenter: LatLng(
-                      _emergency['lat'] ?? 37.7749,
-                      _emergency['lng'] ?? -122.4194,
+                      _emergency['latitude'] ?? 37.7749,
+                      _emergency['longitude'] ?? -122.4194,
                     ),
                     initialZoom: 14,
                   ),
@@ -188,8 +227,8 @@ class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
                       markers: [
                         Marker(
                           point: LatLng(
-                            _emergency['lat'] ?? 37.7749,
-                            _emergency['lng'] ?? -122.4194,
+                            _emergency['latitude'] ?? 37.7749,
+                            _emergency['longitude'] ?? -122.4194,
                           ),
                           width: 40,
                           height: 40,
@@ -217,11 +256,11 @@ class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
             GlassCard(
               child: Column(
                 children: [
-                  _buildInfoRow(Icons.access_time, 'Reported Time', _emergency['time'] ?? 'N/A'),
+                  _buildInfoRow(Icons.access_time, 'Reported Time', timeAgo),
                   const Divider(color: Colors.white24),
-                  _buildInfoRow(Icons.location_on_outlined, 'Latitude', _emergency['lat']?.toString() ?? 'N/A'),
+                  _buildInfoRow(Icons.location_on_outlined, 'Latitude', _emergency['latitude']?.toString() ?? 'N/A'),
                   const Divider(color: Colors.white24),
-                  _buildInfoRow(Icons.location_on_outlined, 'Longitude', _emergency['lng']?.toString() ?? 'N/A'),
+                  _buildInfoRow(Icons.location_on_outlined, 'Longitude', _emergency['longitude']?.toString() ?? 'N/A'),
                 ],
               ),
             ),
@@ -331,14 +370,24 @@ class _EmergencyDetailsScreenState extends State<EmergencyDetailsScreen> {
       ),
     );
   }
+
+  String _formatTime(DateTime dateTime) {
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return '${diff.inHours} hours ago';
+    return '${diff.inDays} days ago';
+  }
 }
 
-class _ResolveDialog extends StatefulWidget {
+class ResolveDialog extends StatefulWidget {
+  const ResolveDialog({super.key});
+
   @override
-  State<_ResolveDialog> createState() => _ResolveDialogState();
+  State<ResolveDialog> createState() => _ResolveDialogState();
 }
 
-class _ResolveDialogState extends State<_ResolveDialog> {
+class _ResolveDialogState extends State<ResolveDialog> {
   final _notesController = TextEditingController();
 
   @override
@@ -356,8 +405,8 @@ class _ResolveDialogState extends State<_ResolveDialog> {
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(color: AppColors.glassBorder),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: AppColors.cyan),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.cyan),
           ),
         ),
       ),

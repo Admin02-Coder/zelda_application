@@ -46,7 +46,7 @@ class SettingsScreen extends StatelessWidget {
                     // Account Section
                     _buildSectionTitle('Account'),
                     GlassCard(
-                      onTap: () {},
+                      onTap: () => context.go('/settings/profile'),
                       child: Row(
                         children: [
                           const Icon(Icons.person, color: AppColors.primary),
@@ -150,7 +150,7 @@ class SettingsScreen extends StatelessWidget {
                     // About
                     _buildSectionTitle('About'),
                     GlassCard(
-                      onTap: () {},
+                      onTap: () => _showAboutDialog(context),
                       child: Row(
                         children: [
                           const Icon(Icons.info_outline, color: AppColors.primary),
@@ -159,6 +159,28 @@ class SettingsScreen extends StatelessWidget {
                             child: Text(
                               'About ZELDA',
                               style: AppTypography.titleMedium,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.textSecondary,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GlassCard(
+                      onTap: () => _showLogoutDialog(context),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.logout, color: AppColors.error),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              'Log Out',
+                              style: AppTypography.titleMedium.copyWith(
+                                color: AppColors.error,
+                              ),
                             ),
                           ),
                           const Icon(
@@ -187,6 +209,63 @@ class SettingsScreen extends StatelessWidget {
         style: AppTypography.labelLarge.copyWith(
           color: AppColors.textSecondary,
         ),
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('About ZELDA', style: TextStyle(color: AppColors.textPrimary)),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Version 1.0.0', style: TextStyle(color: AppColors.textSecondary)),
+            SizedBox(height: 8),
+            Text(
+              'ZELDA Emergency Location System\nYour safety companion for emergency situations.',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Log Out', style: TextStyle(color: AppColors.textPrimary)),
+        content: const Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement logout logic
+            },
+            child: const Text('Log Out', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
       ),
     );
   }

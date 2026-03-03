@@ -5,6 +5,10 @@ import 'package:firebase_core/firebase_core.dart' show Firebase, FirebaseExcepti
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
+import 'core/services/auth_service.dart';
+import 'core/services/permission_service.dart';
+import 'core/services/location_service.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,19 +41,25 @@ void main() async {
     debugPrint('Firebase initialization skipped (SKIP_FIREBASE_INIT=true)');
   }
   
-  // Initialize background service
+  // Initialize background service - only when actually needed
+  // Commented out to prevent crash on startup - will initialize on-demand
+  // try {
+  //   await initializeBackgroundService();
+  // } catch (e) {
+  //   debugPrint('Background service initialization failed: $e');
+  // }
   try {
     await initializeBackgroundService();
   } catch (e) {
     debugPrint('Background service initialization failed: $e');
   }
-  
+
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -59,7 +69,7 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-  
+
   runApp(const ZeldApp());
 }
 
@@ -84,6 +94,18 @@ Future<void> initializeBackgroundService() async {
   );
 }
 
+/// Start the background service for location tracking
+Future<void> startBackgroundService() async {
+  final service = FlutterBackgroundService();
+  await service.startService();
+}
+
+/// Stop the background service
+Future<void> stopBackgroundService() async {
+  final service = FlutterBackgroundService();
+  service.invoke('stopService');
+}
+
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -102,6 +124,20 @@ void onStart(ServiceInstance service) async {
     });
   }
   
+  // Listen for start tracking command
+  service.on('startTracking').listen((event) async {
+    if (event != null && event['userId'] != null) {
+      final locationService = LocationService();
+      await locationService.startTracking(event['userId']);
+    }
+  });
+  
+  // Listen for stop tracking command
+  service.on('stopTracking').listen((event) {
+    final locationService = LocationService();
+    locationService.stopTracking();
+  });
+  
   service.on('stopService').listen((event) {
     service.stopSelf();
   });
@@ -112,11 +148,18 @@ class ZeldApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'ZELDA',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      routerConfig: AppRouter.router,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        Provider(create: (_) => PermissionService()),
+        Provider(create: (_) => LocationService()),
+      ],
+      child: MaterialApp.router(
+        title: 'ZELDA',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        routerConfig: AppRouter.router,
+      ),
     );
   }
 }

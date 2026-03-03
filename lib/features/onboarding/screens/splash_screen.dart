@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/permission_service.dart';
 
 /// Splash Screen - Initial loading screen
 class SplashScreen extends StatefulWidget {
@@ -38,10 +41,133 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateToNext() async {
+    // Wait for animation and initial load
     await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      context.go('/onboarding');
+    
+    if (!mounted) return;
+    
+    // Get permission service
+    final permissionService = context.read<PermissionService>();
+    
+    // Check if onboarding is complete
+    final isOnboardingComplete = await permissionService.isOnboardingComplete();
+    
+    // Request permissions on first launch if not already requested
+    if (!isOnboardingComplete) {
+      // First launch - go to onboarding
+      if (mounted) {
+        context.go('/onboarding');
+      }
+    } else {
+      // Check and request permissions
+      final hasLocation = await permissionService.isLocationGranted();
+      final hasMic = await permissionService.isMicrophoneGranted();
+      
+      // Show rationale dialogs before requesting permissions
+      if (!hasLocation) {
+        final locationAllowed = await _showLocationRationaleDialog();
+        if (!mounted) return;
+        if (locationAllowed) {
+          await permissionService.requestLocationPermission();
+        }
+      }
+      
+      if (!hasMic) {
+        final micAllowed = await _showMicrophoneRationaleDialog();
+        if (!mounted) return;
+        if (micAllowed) {
+          await permissionService.requestMicrophonePermission();
+        }
+      }
+      
+      // Navigate based on auth state
+      if (mounted) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          // User is authenticated, go to home
+          context.go('/');
+        } else {
+          // Not authenticated, go to login
+          context.go('/login');
+        }
+      }
     }
+  }
+
+  Future<bool> _showLocationRationaleDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: const Icon(Icons.location_on, color: AppColors.primary, size: 48),
+        title: Text(
+          'Location Permission',
+          style: AppTypography.headlineMedium,
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          'We need your location to help you quickly report emergencies and connect you with nearby emergency services.',
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Skip', style: AppTypography.buttonMedium.copyWith(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Allow', style: AppTypography.buttonMedium),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<bool> _showMicrophoneRationaleDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: const Icon(Icons.mic, color: AppColors.primary, size: 48),
+        title: Text(
+          'Microphone Permission',
+          style: AppTypography.headlineMedium,
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          'We need microphone access so you can quickly record voice messages during emergency situations.',
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Skip', style: AppTypography.buttonMedium.copyWith(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Allow', style: AppTypography.buttonMedium),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   @override

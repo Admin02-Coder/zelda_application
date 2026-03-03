@@ -54,6 +54,24 @@ class VoiceDetectionService {
     }
   }
 
+  /// Internal method to restart listening (called from onStatus callback)
+  Future<void> _startListening() async {
+    if (!_isListening || _onEmergencyDetected == null) return;
+
+    final available = await isAvailable();
+    if (!available) return;
+
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+      partialResults: true,
+      localeId: 'en_US',
+      cancelOnError: false,
+      listenMode: ListenMode.confirmation,
+    );
+  }
+
   /// Check if speech recognition is available
   Future<bool> isAvailable() async {
     if (!_isInitialized) {

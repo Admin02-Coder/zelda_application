@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/permission_service.dart';
 
 /// Onboarding Screen - 3 slides introduction
 class OnboardingScreen extends StatefulWidget {
@@ -53,7 +55,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Align(
                 alignment: Alignment.topRight,
                 child: TextButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () async {
+                    final permissionService = context.read<PermissionService>();
+                    await permissionService.completeOnboarding();
+                    await permissionService.requestAllPermissions();
+                    if (mounted) {
+                      context.go('/login');
+                    }
+                  },
                   child: Text(
                     'Skip',
                     style: AppTypography.labelLarge.copyWith(
@@ -118,14 +127,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Expanded(
                       flex: _currentPage == 0 ? 1 : 1,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (_currentPage < _pages.length - 1) {
                             _pageController.nextPage(
                               duration: const Duration(milliseconds: 300),
                               curve: Curves.easeInOut,
                             );
                           } else {
-                            context.go('/login');
+                            // Mark onboarding as complete
+                            final permissionService = context.read<PermissionService>();
+                            await permissionService.completeOnboarding();
+                            
+                            // Request permissions after onboarding
+                            await permissionService.requestAllPermissions();
+                            
+                            if (mounted) {
+                              context.go('/login');
+                            }
                           }
                         },
                         child: Text(

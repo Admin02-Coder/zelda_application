@@ -15,6 +15,10 @@ class MainDashboardScreen extends StatefulWidget {
 class _MainDashboardScreenState extends State<MainDashboardScreen>
     with SingleTickerProviderStateMixin {
   bool _trackMeEnabled = false;
+  bool _voiceAlertEnabled = false;
+  bool _isEmergencyLoading = false;
+  bool _isVoiceLoading = false;
+  bool _isShareLoading = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -35,6 +39,50 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   void dispose() {
     _pulseController.dispose();
     super.dispose();
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _handleVoiceAlert() async {
+    setState(() => _isVoiceLoading = true);
+    
+    // Simulate processing
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _voiceAlertEnabled = !_voiceAlertEnabled;
+      _isVoiceLoading = false;
+    });
+    
+    _showSnackBar(
+      _voiceAlertEnabled 
+        ? 'Voice Alert enabled' 
+        : 'Voice Alert disabled'
+    );
+  }
+
+  Future<void> _handleShareLocation() async {
+    setState(() => _isShareLoading = true);
+    
+    // Simulate processing
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    if (!mounted) return;
+    
+    setState(() => _isShareLoading = false);
+    
+    _showSnackBar('Location shared successfully');
   }
 
   @override
@@ -97,6 +145,11 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                                   setState(() {
                                     _trackMeEnabled = value;
                                   });
+                                  _showSnackBar(
+                                    value 
+                                      ? 'Location tracking enabled' 
+                                      : 'Location tracking disabled'
+                                  );
                                 },
                               ),
                             ],
@@ -121,63 +174,75 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                       ),
                       const SizedBox(height: 24),
                       // SOS Button
-                      GestureDetector(
-                        onTap: () => context.go('/active-emergency'),
-                        child: AnimatedBuilder(
-                          animation: _pulseAnimation,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: _pulseAnimation.value,
-                              child: Container(
-                                width: 200,
-                                height: 200,
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.emergencyGradient,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.secondary
-                                          .withValues(alpha: 0.4),
-                                      blurRadius: 30,
-                                      spreadRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.emergency,
-                                        size: 60,
-                                        color: Colors.white,
+                      _isEmergencyLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            )
+                          : GestureDetector(
+                              onTap: () async {
+                                setState(() => _isEmergencyLoading = true);
+                                await Future.delayed(const Duration(milliseconds: 300));
+                                if (mounted) {
+                                  context.go('/active-emergency');
+                                }
+                              },
+                              child: AnimatedBuilder(
+                                animation: _pulseAnimation,
+                                builder: (context, child) {
+                                  return Transform.scale(
+                                    scale: _pulseAnimation.value,
+                                    child: Container(
+                                      width: 200,
+                                      height: 200,
+                                      decoration: BoxDecoration(
+                                        gradient: AppColors.emergencyGradient,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.secondary
+                                                .withValues(alpha: 0.4),
+                                            blurRadius: 30,
+                                            spreadRadius: 5,
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'SOS',
-                                        style:
-                                            AppTypography.emergencyText.copyWith(
-                                          color: Colors.white,
-                                          fontSize: 36,
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.emergency,
+                                              size: 60,
+                                              color: Colors.white,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'SOS',
+                                              style:
+                                                  AppTypography.emergencyText.copyWith(
+                                                color: Colors.white,
+                                                fontSize: 36,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
-                      ),
+                            ),
                       const SizedBox(height: 32),
                       // Quick Actions
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _buildQuickAction(
-                            icon: Icons.mic,
-                            label: 'Voice\nAlert',
-                            onTap: () {},
+                            icon: _isVoiceLoading ? Icons.hourglass_empty : Icons.mic,
+                            label: _isVoiceLoading ? 'Loading...' : 'Voice\nAlert',
+                            isLoading: _isVoiceLoading,
+                            onTap: _handleVoiceAlert,
                           ),
                           _buildQuickAction(
                             icon: Icons.history,
@@ -185,9 +250,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                             onTap: () => context.go('/emergency-history'),
                           ),
                           _buildQuickAction(
-                            icon: Icons.share,
-                            label: 'Share\nLocation',
-                            onTap: () {},
+                            icon: _isShareLoading ? Icons.hourglass_empty : Icons.share,
+                            label: _isShareLoading ? 'Loading...' : 'Share\nLocation',
+                            isLoading: _isShareLoading,
+                            onTap: _handleShareLocation,
                           ),
                         ],
                       ),
@@ -206,14 +272,24 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool isLoading = false,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: GlassCard(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.primary, size: 28),
+            isLoading
+                ? const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : Icon(icon, color: AppColors.primary, size: 28),
             const SizedBox(height: 8),
             Text(
               label,

@@ -35,7 +35,7 @@ class GlassCard extends StatelessWidget {
             padding: padding ?? const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: gradient,
-              color: gradient == null ? (backgroundColor ?? AppColors.glassBackground) : null,
+              color: gradient == null ? (backgroundColor ?? AppColors.surfaceDark) : null,
               borderRadius: BorderRadius.circular(borderRadius),
               border: Border.all(
                 color: AppColors.glassBorder,

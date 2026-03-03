@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
@@ -10,6 +11,11 @@ import '../../features/home/screens/home_screen.dart';
 import '../../features/emergency/screens/active_emergency_screen.dart';
 import '../../features/emergency/screens/emergency_history_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/settings/screens/trigger_config_screen.dart';
+import '../../features/settings/screens/trusted_contacts_screen.dart';
+import '../../features/settings/screens/notification_settings_screen.dart';
+import '../../features/settings/screens/security_settings_screen.dart';
+import '../../features/settings/screens/profile_screen.dart';
 import '../../features/police/screens/police_register_screen.dart';
 import '../../features/police/screens/emergency_details_screen.dart';
 import '../../features/police/screens/police_dashboard_screen.dart';
@@ -24,6 +30,36 @@ class AppRouter {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/splash',
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      // Skip redirect for splash, onboarding, and police routes
+      final path = state.uri.path;
+      if (path == '/splash' || 
+          path == '/onboarding' || 
+          path.startsWith('/police')) {
+        return null;
+      }
+      
+      // Check current auth state
+      final user = FirebaseAuth.instance.currentUser;
+      
+      // If not authenticated and trying to access protected route, go to login
+      if (user == null && 
+          !path.startsWith('/login') && 
+          !path.startsWith('/register') && 
+          !path.startsWith('/otp')) {
+        return '/login';
+      }
+      
+      // If authenticated and trying to access auth routes, go to home
+      if (user != null && 
+          (path.startsWith('/login') || 
+           path.startsWith('/register') || 
+           path.startsWith('/otp'))) {
+        return '/';
+      }
+      
+      return null;
+    },
     routes: [
       // Splash & Onboarding
       GoRoute(
@@ -79,6 +115,33 @@ class AppRouter {
             path: 'settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'profile',
+                name: 'settings-profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+              GoRoute(
+                path: 'trigger-config',
+                name: 'settings-trigger-config',
+                builder: (context, state) => const TriggerConfigScreen(),
+              ),
+              GoRoute(
+                path: 'trusted-contacts',
+                name: 'settings-trusted-contacts',
+                builder: (context, state) => const TrustedContactsScreen(),
+              ),
+              GoRoute(
+                path: 'notification-settings',
+                name: 'settings-notification',
+                builder: (context, state) => const NotificationSettingsScreen(),
+              ),
+              GoRoute(
+                path: 'security-settings',
+                name: 'settings-security',
+                builder: (context, state) => const SecuritySettingsScreen(),
+              ),
+            ],
           ),
         ],
       ),
