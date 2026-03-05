@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -259,9 +261,13 @@ class SettingsScreen extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Implement logout logic
+              final authService = context.read<AuthService>();
+              await authService.signOut();
+              if (context.mounted) {
+                context.go('/login');
+              }
             },
             child: const Text('Log Out', style: TextStyle(color: AppColors.error)),
           ),
