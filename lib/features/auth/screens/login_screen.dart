@@ -274,12 +274,15 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           context.go('/');
         }
-      } on FirebaseAuthException catch (e) {
-        setState(() {
-          _errorMessage = _getErrorMessage(e.code);
-          _isLoading = false;
-        });
-      } catch (e) {
+} on FirebaseAuthException catch (e) {
+  // DEBUG: Log actual error
+  debugPrint('FirebaseAuthException: code=${e.code}, message=${e.message}');
+  setState(() {
+    // Show actual error for debugging
+    _errorMessage = 'Error (${e.code}): ${e.message ?? "Unknown error"}';
+    _isLoading = false;
+  });
+} catch (e) {
         setState(() {
           _errorMessage = 'An error occurred. Please try again.';
           _isLoading = false;

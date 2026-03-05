@@ -43,3 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Sensitive files (do not commit)
+android/app/google-services.json
+lib/firebase_options.dart
+
+# Internal files
+.sisyphus/
+*.png
+nul
