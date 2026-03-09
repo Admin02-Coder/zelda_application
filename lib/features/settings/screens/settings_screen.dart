@@ -26,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => context.pop(),
                       icon: const Icon(Icons.arrow_back),
                     ),
                     Expanded(
